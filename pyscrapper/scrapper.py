@@ -1,8 +1,13 @@
 from logging import Logger
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from pkg_resources import  resource_filename
+import warnings
 
-driver = webdriver.PhantomJS("/home/pavan/Downloads/phantomjs-2.1.1-linux-x86_64/bin/phantomjs")
+warnings.filterwarnings("ignore", category=UserWarning, module=webdriver.__name__)
+
+DRIVER_PATH =  resource_filename(__name__,"resources/phantomjs")
+driver = webdriver.PhantomJS(DRIVER_PATH)
 logger = Logger("scrapper")
 
 def getHtmlContent(url):
@@ -14,9 +19,9 @@ def getHtmlContent(url):
         content = html;
     except:
         content = ""
-    f = open("file.html", "w")
-    f.write(html)
-    f.close()
+    # f = open("file.html", "w")
+    # f.write(html)
+    # f.close()
     soup = BeautifulSoup(content, "html.parser")
     return soup
 
@@ -26,7 +31,8 @@ class BlockHolder:
     SELECTOR = 'selector'
     ATTR = 'attr'
     EQ = "eq"
-    const_keys = [LIST_ITEM, DATA, SELECTOR, ATTR, EQ]
+    WHICH = "which"
+    const_keys = [LIST_ITEM, DATA, SELECTOR, ATTR, EQ, WHICH]
 
     def __init__(self, html, config, isFirst=False, isList=False, name=''):
         self.is_parent = False
@@ -43,7 +49,7 @@ class BlockHolder:
         if type(html) == list:
             html = ' '.join([str(lis) for lis in html])
         if html != None and len(html) != 0 and (type(html) == BeautifulSoup or type(html) == str):
-            self.html = html if type(html) == BeautifulSoup else BeautifulSoup(html)
+            self.html = html if type(html) == BeautifulSoup else BeautifulSoup(html, "html.parser")
             self.__parse_config()
 
     def name(self, name):
@@ -55,27 +61,41 @@ class BlockHolder:
         return self
 
     def __parse_config(self):
+        mWhich = self.__get_attr(self.config, self.WHICH)
+        mWhich = mWhich - 1 if mWhich != None and type(mWhich) == int else None
         if type(self.config) == dict:
 
             mhtml = self.html
             keys = self.config.keys()
             if not self.isFirst:
                 if self.LIST_ITEM in keys:
-                    # If no data block i.e, no keys available in data, nothing can be selected
-                    if self.__get_attr(self.config, self.DATA) == None:
-                        return []
 
                     self.isParent = True
                     self.isList = True
+                    print("MWHICH ",mWhich)
+                    # If no data block i.e, no keys available in data, nothing can be selected
+                    if self.__get_attr(self.config, self.DATA) == None:
+                        self.fObj = [item for item in self.__parse_tags(mhtml, self.__get_attr(self.config, self.LIST_ITEM))]
+                        if mWhich is not None:
+                            final_which= self.__get_attr(self.fObj, mWhich)
+                            self.fObj = final_which if  final_which != None else ''
+                        return
+
+
                     childHtml = self.__parse_tags(mhtml, self.__get_attr(self.config, self.LIST_ITEM))
                     if childHtml != '' or len(childHtml) > 0:
-                        obs = [{child_key: child_config} for child_key, child_config in self.config[self.DATA].items()]
+                        obs = [{child_key: child_config} for child_key, child_config in self.config[self.DATA].items() ]
                         self.children = {child_key:
                                              BlockHolder(childHtml, child_config, name=child_key, isList=True).name(
                                                  child_key).parent(
                                                  self).parsed_data() \
-                                         for child_key, child_config in self.config[self.DATA].items()}
+                                         for child_key, child_config in self.config[self.DATA].items() if child_key not in self.const_keys}
+                        print("CHILDREN : ", self.children)
                         self.fObj = self.normalize(self.children)
+                        if mWhich is not None:
+                            print("After children ... ", mWhich, self.__get_attr(self.config, self.WHICH))
+                            final_which= self.__get_attr(self.fObj, mWhich)
+                            self.fObj = final_which if  final_which != None else ''
                 if self.SELECTOR in keys:
                     tag = self.config[self.SELECTOR]
                     print("Selector : ", tag)
@@ -113,6 +133,9 @@ class BlockHolder:
             parsed_data = self.__parse_tags(self.html, self.config)
             self.fObj = parsed_data[0].text if len(parsed_data) == 1 else \
                 [str(p.text) for p in parsed_data]
+            if mWhich is not None:
+                final_which = self.__get_attr(self.fObj, mWhich)
+                self.fObj = final_which if final_which != None else ''
 
     def parsed_data(self):
         return self.fObj
