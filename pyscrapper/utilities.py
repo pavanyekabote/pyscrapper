@@ -34,7 +34,6 @@ def parse_tags(html, structured_tag):
     for tag_block in tag_blocks:
         selector_tuple = parse_selector(tag_block)
         html = fetch_html_with(*selector_tuple, html)
-        # print("Selector ", *selector_tuple, html)
     return html
 
 def parse_selector(selector):
