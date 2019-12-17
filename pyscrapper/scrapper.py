@@ -62,6 +62,18 @@ class PyScrapper:
             can_be_parsed_next = True
         return html, can_be_parsed_next
 
+    def as_text(self, soup_element):
+        try:
+            if get_attr(self.config, self.__ATTR) is None:
+                if type(soup_element) == list and len(soup_element) > 0:
+                    return [soup_elem.text for soup_elem in soup_element if soup_elem is not None]
+                else:
+                    return  soup_element.text
+        except:
+            pass
+
+        return soup_element
+
     def __parse_configuration(self):
         """ This method parses and grabs elements from html, creates relevant object(s) as per the configuration """
 
@@ -73,11 +85,11 @@ class PyScrapper:
                 self.result = result_list
 
             if get_attr(self.config, self.__SELECTOR) is not None:
-                self.html = parse_tags(self.html, get_attr(self.config, self.__SELECTOR))
+                self.html = parse_tags(self.html, get_attr(self.config, self.__SELECTOR), eq=self.element_index)
                 if not self.is_list:
-                    self.result = self.html[0] if len(self.html) > 0 else self.html
+                    self.result = self.as_text(self.html[0]) if len(self.html) > 0 else self.as_text(self.html)
                 else:
-                        self.result = self.html
+                    self.result = self.as_text(self.html)
 
 
             if get_attr(self.config, self.__ATTR) is not None:
@@ -90,9 +102,9 @@ class PyScrapper:
                         # map(lambda obj: get_attr(obj, object_key), self.html) if len(self.html) > 0 else self.html
                 self.result = self.html
 
-            if get_attr(self.config, self.__EQ) is not None:
-                if self.is_list:
-                    self.result = self.result[self.element_index]
+            # if get_attr(self.config, self.__EQ) is not None:
+            #     if self.is_list:
+            #         self.result = self.result[self.element_index]
 
             # Parse for all keys
             keys = self.config.keys()
@@ -102,7 +114,7 @@ class PyScrapper:
                     self.result[key] = self.__get_result_from_non_const_keys(key, key_block)
 
         elif type(self.config) == str:
-            self.html = parse_tags(self.html, self.config)
+            self.html = parse_tags(self.html, self.config, eq=self.element_index)
             res = self.html[0].text if len(self.html) == 1  else \
                     [str(x.text) for x in self.html]
             self.result = res
@@ -111,7 +123,7 @@ class PyScrapper:
         """ This method works on those keys which are not a part of CONST keys  """
         res = ''
         if type(key_block) == str:
-            self.html = parse_tags(self.html, key_block)
+            self.html = parse_tags(self.html, key_block, eq=self.element_index)
             if get_attr(self.config, self.__ATTR) is None and len(self.html) > 0:
                 res = self.html[0].text if len(self.html) == 1 else \
                       [str(p.text) for p in self.html]
@@ -149,17 +161,17 @@ class PyScrapper:
             sub_blocks_dict = { key : PyScrapper(tag_parsed_html, conf, name=key, is_list=self.is_list).get_scrapped_config() \
                                 for key, conf in get_attr(self.config, self.__DATA).items() \
                                 if get_attr(self.CONST_KEYS, key) is None }
-            sub_blocks_dict = normalize_parsed_dict(sub_blocks_dict)
+            sub_blocks_dict = normalize_parsed_dict(sub_blocks_dict,  len(tag_parsed_html))
 
         return sub_blocks_dict
 
     def get_scrapped_config(self):
         if self.can_parse_next:
             self.__parse_configuration()
-        if self.element_index is not None and self.is_list:
-            if type(self.result) == list:
-                print("CONFIG : ",self.config, " IDX : ",self.element_index, self.result)
-                self.result = get_attr(self.result, self.element_index)
+        # if self.element_index is not None and self.is_list:
+        #     if type(self.result) == list:
+        #         # print("CONFIG : ",self.config, " IDX : ",self.element_index, self.result)
+        #         self.result = get_attr(self.result, self.element_index)
         return self.result
 
 

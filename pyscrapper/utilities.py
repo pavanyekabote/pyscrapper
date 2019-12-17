@@ -24,7 +24,7 @@ def get_attr(src_object, index, none_if_empty=False, obj_if_empty=False):
     return res
 
 
-def parse_tags(html, structured_tag):
+def parse_tags(html, structured_tag, eq=None):
     """ Parses structured tags like div .select > #id and fetches its values from html """
     if html is None:
         return []
@@ -33,7 +33,7 @@ def parse_tags(html, structured_tag):
 
     for tag_block in tag_blocks:
         selector_tuple = parse_selector(tag_block)
-        html = fetch_html_with(*selector_tuple, html)
+        html = fetch_html_with(*selector_tuple, html, eq=eq)
     return html
 
 def parse_selector(selector):
@@ -42,6 +42,7 @@ def parse_selector(selector):
     m_class, m_id, m_selector = [], None, None
     if selector is not None and type(selector) == str:
         selector_labels = selector.split()
+        print("SELECTOR ",selector_labels)
         for label in selector_labels:
             if label.startswith("."):
                 m_class.append(label)
@@ -56,36 +57,49 @@ def parse_selector(selector):
     return m_selector, m_id, m_class
 
 
-def fetch_html_with(m_selector, m_id, m_class, html):
+def fetch_html_with(m_selector, m_id, m_class, html, eq=None):
     if m_id is not None:
-        html = listify_soup(html, select=True, tupled_attrs=(m_id))
+        html = listify_soup(html, select=True, tupled_attrs=(m_id), eq=eq)
 
     elif m_selector is not None and len(m_class) > 0:
         attrs = {'class' : ' '.join([cls[1:] for cls in m_class])}
-        html = listify_soup(html,tupled_attrs=(m_selector, attrs))
+        html = listify_soup(html,tupled_attrs=(m_selector, attrs), eq=eq)
 
     elif m_selector is None and len(m_class) > 0:
         cls_param = ''.join(m_class)
-        html = listify_soup(html, select=True, tupled_attrs=(cls_param))
+        html = listify_soup(html, select=True, tupled_attrs=(cls_param), eq=eq)
 
     elif m_selector is not None and len(m_class) == 0 and m_id is None:
-        html = listify_soup(html, tupled_attrs=(m_selector))
+        html = listify_soup(html, tupled_attrs=(m_selector), eq=eq)
     return html
 
 
-def listify_soup(soup_object_list, select = False, tupled_attrs = ()):
+def listify_soup(soup_object_list, select = False, tupled_attrs = (), eq=None):
     result = []
     is_tuple = type(tupled_attrs) == tuple
     source_arr =  soup_object_list#get_selector_result(soup_object_list, is_select=select, attrs=tupled_attrs)
     if type(soup_object_list) == BeautifulSoup:
-        result = [soup for soup in get_selector_result(source_arr, is_select=select, attrs=tupled_attrs)]
+        result = [soup for soup in get_selector_result(source_arr, is_select=select, attrs=tupled_attrs, eq=eq)]
     else:
         result = [soup for soup_object in source_arr for soup in \
-                  get_selector_result(soup_object, is_select=select, attrs=tupled_attrs)]
+                  get_selector_result(soup_object, is_select=select, attrs=tupled_attrs, eq=eq) if soup is not None]
     return result
 
 
-def get_selector_result(soup, is_select=False, attrs = ()):
+def get_selector_result(soup, is_select=False, attrs = (), eq=None):
+    is_tuple = type(attrs) == tuple
+    if soup is None:
+        return []
+    res = []
+    if eq is None:
+        res = apply_selector(soup,is_select, attrs)
+    elif eq is not None and type(eq) == int:
+        # Needs some more refactorings, for optimization
+        res = [get_attr(apply_selector(BeautifulSoup(str(sub_soup), "html.parser"), is_select, attrs), eq) \
+               for sub_soup in soup if str(sub_soup) is not None]
+    return res
+
+def apply_selector(soup, is_select=False, attrs=()):
     is_tuple = type(attrs) == tuple
     res = []
     if is_tuple:
@@ -101,9 +115,9 @@ def get_selector_result(soup, is_select=False, attrs = ()):
     return res
 
 
-def normalize_parsed_dict(pdict : dict) -> list:
+def normalize_parsed_dict(pdict : dict, size : int) -> list:
     arr, index = [], 0
-    size = max([len(vals) for vals in pdict.values()])
+    # size = max([len(vals) for vals in pdict.values()])
     while index < size:
         mObj = {}
         for k, v in pdict.items():
