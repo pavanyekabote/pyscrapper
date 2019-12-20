@@ -1,36 +1,39 @@
-from logging import Logger
+import logging as log
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from selenium import webdriver
 from pkg_resources import resource_filename
 import warnings
-from .utilities import get_attr, parse_tags, normalize_parsed_dict
+from .utilities import get_attr, parse_tags
 warnings.filterwarnings("ignore", category=UserWarning, module=webdriver.__name__)
 
-DRIVER_PATH = resource_filename(__name__, "resources/phantomjs")
-driver = webdriver.PhantomJS(DRIVER_PATH)
+
+class RequestHandler:
+    __DRIVER_PATH = resource_filename(__name__, "resources/phantomjs")
+    __driver = webdriver.PhantomJS(__DRIVER_PATH)
+
+    __headers = {'Accept': '*/*',
+               'Accept-Encoding': 'gzip, deflate, sdch',
+               'Accept-Language': 'en-US,en;q=0.8',
+               'Cache-Control': 'max-age=0',
+               'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36'
+               }
+
+    for key, value in enumerate(__headers):
+        capability_key = 'phantomjs.page.customHeaders.{}'.format(key)
+        webdriver.DesiredCapabilities.PHANTOMJS[capability_key] = value
+
+    @staticmethod
+    def get_html_content(url):
+        RequestHandler.__driver.get(url)
+        html = RequestHandler.__driver.find_element_by_tag_name('body').get_attribute("innerHTML")
+        soup = BeautifulSoup(html, "html.parser")
+        return soup
 
 
-headers = { 'Accept':'*/*',
-    'Accept-Encoding':'gzip, deflate, sdch',
-    'Accept-Language':'en-US,en;q=0.8',
-    'Cache-Control':'max-age=0',
-    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36'
-}
-
-for key, value in enumerate(headers):
-    capability_key = 'phantomjs.page.customHeaders.{}'.format(key)
-    webdriver.DesiredCapabilities.PHANTOMJS[capability_key] = value
-
-logger = Logger("scrapper")
-
-def get_html_content(url):
-    global driver
-    driver.get(url)
-    html = driver.find_element_by_tag_name('body').get_attribute("innerHTML")
-    soup = BeautifulSoup(html, "html.parser")
-    return soup
-
+class PyScrapeException(Exception):
+    """ Custom exception if any exceptions arise while parsing html content"""
+    pass
 
 class PyScrapper:
 
@@ -167,14 +170,32 @@ class PyScrapper:
         return sub_block_data
 
     def get_scrapped_config(self):
-        if self.can_parse_next:
-            self.__parse_configuration()
-        # if self.element_index is not None and self.is_list:
-        #     if type(self.result) == list:
-        #         # print("CONFIG : ",self.config, " IDX : ",self.element_index, self.result)
-        #         self.result = get_attr(self.result, self.element_index)
+        try:
+            if self.can_parse_next:
+                self.__parse_configuration()
+        except Exception as e:
+            raise PyScrapeException(e)
         return self.result
 
 
-
+def scrape_content(url, config, to_string=False, raise_exception=False):
+    """ Takes url, configuration as parameters and returns parsed data, as per the configuration """
+    assert type(config) is dict
+    if len(config.keys()) == 0 :
+        return None
+    data = None
+    try:
+        html = RequestHandler.get_html_content(url)
+        data = PyScrapper(html, config).get_scrapped_config()
+        if to_string:
+            data = json.dumps(data)
+    except Exception as e:
+        if isinstance(e,PyScrapeException):
+            log.error("Error occured while scraping.",e)
+            if raise_exception:
+                raise e
+            return data
+        else:
+            raise e
+    return data
 
