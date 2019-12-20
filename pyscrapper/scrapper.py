@@ -13,12 +13,11 @@ class RequestHandler:
     __driver = webdriver.PhantomJS(__DRIVER_PATH)
 
     __headers = {'Accept': '*/*',
-               'Accept-Encoding': 'gzip, deflate, sdch',
-               'Accept-Language': 'en-US,en;q=0.8',
-               'Cache-Control': 'max-age=0',
-               'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36'
-               }
-
+                 'Accept-Encoding': 'gzip, deflate, sdch',
+                 'Accept-Language': 'en-US,en;q=0.8',
+                 'Cache-Control': 'max-age=0',
+                 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36'
+                 }
     for key, value in enumerate(__headers):
         capability_key = 'phantomjs.page.customHeaders.{}'.format(key)
         webdriver.DesiredCapabilities.PHANTOMJS[capability_key] = value
@@ -70,9 +69,9 @@ class PyScrapper:
         try:
             if get_attr(self.config, self.__ATTR) is None:
                 if type(soup_element) == list and len(soup_element) > 0:
-                    return [soup_elem.text for soup_elem in soup_element if soup_elem is not None]
+                    return [str(soup_elem.text).strip() for soup_elem in soup_element if soup_elem is not None]
                 else:
-                    return  soup_element.text
+                    return  str(soup_element.text).strip()
         except:
             pass
 
@@ -94,7 +93,6 @@ class PyScrapper:
                     self.result = self.as_text(html[0]) if len(html) > 0 else self.as_text(html)
                 else:
                     self.result = self.as_text(html)
-
 
             if get_attr(self.config, self.__ATTR) is not None:
                 object_key = get_attr(self.config, self.__ATTR)
@@ -119,8 +117,8 @@ class PyScrapper:
 
         elif type(self.config) == str:
             html = parse_tags(html, self.config, eq=self.element_index)
-            res = html[0].text if len(html) == 1  else \
-                    [str(x.text) for x in html]
+            res = str(html[0].text).strip() if len(html) == 1  else \
+                    [str(x.text).strip() for x in html]
             self.result = res
 
     def __get_result_from_non_const_keys(self, key, key_block):
@@ -130,8 +128,8 @@ class PyScrapper:
         if type(key_block) == str:
             html = parse_tags(html, key_block, eq=self.element_index)
             if get_attr(self.config, self.__ATTR) is None and len(html) > 0:
-                res = html[0].text if len(html) == 1 else \
-                      [str(p.text) for p in html]
+                res = str(html[0].text).strip() if len(html) == 1 else \
+                      [str(p.text).strip() for p in html]
         elif type(key_block) == dict:
             res = PyScrapper(self.html, key_block, name=key).get_scrapped_config()
         return res
@@ -178,7 +176,7 @@ class PyScrapper:
         return self.result
 
 
-def scrape_content(url, config, to_string=False, raise_exception=False):
+def scrape_content(url, config, to_string=False, raise_exception=True):
     """ Takes url, configuration as parameters and returns parsed data, as per the configuration """
     assert type(config) is dict
     if len(config.keys()) == 0 :
