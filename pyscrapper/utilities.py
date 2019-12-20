@@ -42,7 +42,6 @@ def parse_selector(selector):
     m_class, m_id, m_selector = [], None, None
     if selector is not None and type(selector) == str:
         selector_labels = selector.split()
-        print("SELECTOR ",selector_labels)
         for label in selector_labels:
             if label.startswith("."):
                 m_class.append(label)
@@ -114,18 +113,4 @@ def apply_selector(soup, is_select=False, attrs=()):
             res = soup.find_all(attrs)
     return res
 
-
-def normalize_parsed_dict(pdict : dict, size : int) -> list:
-    arr, index = [], 0
-    # size = max([len(vals) for vals in pdict.values()])
-    while index < size:
-        mObj = {}
-        for k, v in pdict.items():
-            try:
-                mObj[k] = str(v[index]).strip()
-            except:
-                mObj[k] = ''
-        arr.append(mObj)
-        index += 1
-    return arr
 

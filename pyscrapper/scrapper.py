@@ -1,5 +1,6 @@
 from logging import Logger
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 from selenium import webdriver
 from pkg_resources import resource_filename
 import warnings
@@ -57,8 +58,8 @@ class PyScrapper:
         if type(html) == list:
             html = ' '.join([str(lis) for lis in html])
 
-        if html is not None and len(html) != 0 and (type(html) == BeautifulSoup or type(html) == str):
-            html = html if type(html) == BeautifulSoup else BeautifulSoup(html, "html.parser")
+        if html is not None and len(html) != 0 and (type(html) is BeautifulSoup or type(html) is str or type(html) is Tag):
+            html = html if type(html) == BeautifulSoup  else BeautifulSoup(str(html), "html.parser")
             can_be_parsed_next = True
         return html, can_be_parsed_next
 
@@ -76,35 +77,35 @@ class PyScrapper:
 
     def __parse_configuration(self):
         """ This method parses and grabs elements from html, creates relevant object(s) as per the configuration """
-
+        html = self.html
         if type(self.config) == dict:
             """ check if the configuration is dict """
 
             if get_attr(self.config, self.__LIST_ITEM) is not None:
-                result_list = self.__parse_list(self.html)
+                result_list = self.__parse_list(html)
                 self.result = result_list
 
             if get_attr(self.config, self.__SELECTOR) is not None:
-                self.html = parse_tags(self.html, get_attr(self.config, self.__SELECTOR), eq=self.element_index)
+                html = parse_tags(html, get_attr(self.config, self.__SELECTOR), eq=self.element_index)
                 if not self.is_list:
-                    self.result = self.as_text(self.html[0]) if len(self.html) > 0 else self.as_text(self.html)
+                    self.result = self.as_text(html[0]) if len(html) > 0 else self.as_text(html)
                 else:
-                    self.result = self.as_text(self.html)
+                    self.result = self.as_text(html)
 
 
             if get_attr(self.config, self.__ATTR) is not None:
                 object_key = get_attr(self.config, self.__ATTR)
                 if not self.is_list:
-                    self.html = self.html[0] if len(self.html) > 0 else self.html
-                    self.html = get_attr(self.html, object_key)
+                    html = html[0] if len(html) > 0 else html
+                    html = get_attr(html, object_key)
                 else:
-                    self.html = [get_attr(obj, object_key) for obj in self.html] if len(self.html) > 0 else self.html
-                        # map(lambda obj: get_attr(obj, object_key), self.html) if len(self.html) > 0 else self.html
-                self.result = self.html
+                    html = [get_attr(obj, object_key) for obj in html] if len(html) > 0 else html
+                        # map(lambda obj: get_attr(obj, object_key), html) if len(html) > 0 else html
+                self.result = html
 
-            # if get_attr(self.config, self.__EQ) is not None:
-            #     if self.is_list:
-            #         self.result = self.result[self.element_index]
+            if get_attr(self.config, self.__EQ) is not None:
+                if self.is_list or (len(self.result) > 0 and type(self.result) == list):
+                    self.result = self.result[self.element_index]
 
             # Parse for all keys
             keys = self.config.keys()
@@ -114,21 +115,22 @@ class PyScrapper:
                     self.result[key] = self.__get_result_from_non_const_keys(key, key_block)
 
         elif type(self.config) == str:
-            self.html = parse_tags(self.html, self.config, eq=self.element_index)
-            res = self.html[0].text if len(self.html) == 1  else \
-                    [str(x.text) for x in self.html]
+            html = parse_tags(html, self.config, eq=self.element_index)
+            res = html[0].text if len(html) == 1  else \
+                    [str(x.text) for x in html]
             self.result = res
 
     def __get_result_from_non_const_keys(self, key, key_block):
         """ This method works on those keys which are not a part of CONST keys  """
         res = ''
+        html = self.html
         if type(key_block) == str:
-            self.html = parse_tags(self.html, key_block, eq=self.element_index)
-            if get_attr(self.config, self.__ATTR) is None and len(self.html) > 0:
-                res = self.html[0].text if len(self.html) == 1 else \
-                      [str(p.text) for p in self.html]
+            html = parse_tags(html, key_block, eq=self.element_index)
+            if get_attr(self.config, self.__ATTR) is None and len(html) > 0:
+                res = html[0].text if len(html) == 1 else \
+                      [str(p.text) for p in html]
         elif type(key_block) == dict:
-            res = PyScrapper(self.html, key_block, name=key, is_list=self.is_list).get_scrapped_config()
+            res = PyScrapper(self.html, key_block, name=key).get_scrapped_config()
         return res
 
     def __get_index_to_select(self, config) -> object:
@@ -156,14 +158,13 @@ class PyScrapper:
             result = [str(item.text).strip() for item in tag_parsed_html]
             return result
 
-        sub_blocks_dict = {}
+        sub_block_data = []
         if tag_parsed_html != '' or len(tag_parsed_html) >0:
-            sub_blocks_dict = { key : PyScrapper(tag_parsed_html, conf, name=key, is_list=self.is_list).get_scrapped_config() \
-                                for key, conf in get_attr(self.config, self.__DATA).items() \
-                                if get_attr(self.CONST_KEYS, key) is None }
-            sub_blocks_dict = normalize_parsed_dict(sub_blocks_dict,  len(tag_parsed_html))
+            # Iterate through each data block, and run each configuration on each data block.
+            sub_block_data = [PyScrapper(tag_html,get_attr(self.config, self.__DATA)).get_scrapped_config()
+                              for tag_html in tag_parsed_html]
 
-        return sub_blocks_dict
+        return sub_block_data
 
     def get_scrapped_config(self):
         if self.can_parse_next:
