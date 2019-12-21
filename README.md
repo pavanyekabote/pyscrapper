@@ -62,6 +62,9 @@ print(scrape_content(URL, config, to_string=True))
 ---
 List Example: 
 ```python
+
+from pyscrapper.scrapper import scrape_content
+
 config ={  
   "pages": {  
     "listItem": "li .page",  
