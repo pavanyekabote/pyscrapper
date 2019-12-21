@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from selenium import webdriver
 from pkg_resources import resource_filename
+import json
 import warnings
 from .utilities import get_attr, parse_tags
 from .resources.resource_manager import get_phantom_driver_path
