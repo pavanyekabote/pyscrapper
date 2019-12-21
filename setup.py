@@ -7,7 +7,7 @@ setup(
     name='pyscrapper',
     version='0.0.1',
     author='Pavan Kumar Yekabote',
-    url='https://github.com/pyscrapper',
+    url='https://github.com/pavanyekabote/pyscrapper',
     long_description = long_description,
     long_description_content_type="text/markdown",
     description='A project to scrape web content as per the configuration',
