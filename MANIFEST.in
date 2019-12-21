@@ -1,0 +1,2 @@
+include pyscrapper/resources/phantomjs
+include LICENSE

@@ -5,11 +5,13 @@ from selenium import webdriver
 from pkg_resources import resource_filename
 import warnings
 from .utilities import get_attr, parse_tags
+from .resources.resource_manager import get_phantom_driver_path
 warnings.filterwarnings("ignore", category=UserWarning, module=webdriver.__name__)
 
 
 class RequestHandler:
-    __DRIVER_PATH = resource_filename(__name__, "resources/phantomjs")
+    __DRIVER_PATH = get_phantom_driver_path()
+    #resource_filename(__name__, "resources/phantomjs")
     __driver = webdriver.PhantomJS(__DRIVER_PATH)
 
     __headers = {'Accept': '*/*',

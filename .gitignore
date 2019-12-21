@@ -5,7 +5,7 @@ lib64/
 share/
 pyvenv.cfg
 .idea/
-
+test.py
 
 
 # Created by https://www.gitignore.io/api/python,django,intellij,pycharm
