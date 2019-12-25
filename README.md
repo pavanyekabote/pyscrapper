@@ -22,7 +22,8 @@ pip install pyscrapper
 			 1. `selector (string)`: The selector.
 			 2. `attr (string)`: If provided, the value will be taken based on the attribute name.
 			 3. `eq (int)`: If provided, it will select the nth element.
-
+    - window_size : Specify browser window size in which the url to be loaded
+        - default: (1366, 784) # all url's are loaded in 1366, 784 sized browser window by default
  ---
 ### Usage : 
 
@@ -48,7 +49,7 @@ config = {
 # URL of the webpage to be scrapped
 URL = "https://ionicabizau.net"  
 
-# to_string=True allows to return dict converted to json string
+# to_string=True allows to return dict converted to json string 
 print(scrape_content(URL, config, to_string=True))
 ```
 ```javascript
