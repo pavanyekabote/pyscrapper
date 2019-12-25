@@ -9,11 +9,10 @@ from .utilities import get_attr, parse_tags
 from .resources.resource_manager import get_phantom_driver_path
 warnings.filterwarnings("ignore", category=UserWarning, module=webdriver.__name__)
 
-
 class RequestHandler:
+
     __DRIVER_PATH = get_phantom_driver_path()
-    #resource_filename(__name__, "resources/phantomjs")
-    __driver = webdriver.PhantomJS(__DRIVER_PATH)
+    __driver =  webdriver.PhantomJS(__DRIVER_PATH)
 
     __headers = {'Accept': '*/*',
                  'Accept-Encoding': 'gzip, deflate, sdch',
@@ -26,7 +25,8 @@ class RequestHandler:
         webdriver.DesiredCapabilities.PHANTOMJS[capability_key] = value
 
     @staticmethod
-    def get_html_content(url):
+    def get_html_content(url, window_size=(1366, 784)):
+        RequestHandler.__driver.set_window_size(*window_size)
         RequestHandler.__driver.get(url)
         html = RequestHandler.__driver.find_element_by_tag_name('body').get_attribute("innerHTML")
         soup = BeautifulSoup(html, "html.parser")
@@ -179,14 +179,17 @@ class PyScrapper:
         return self.result
 
 
-def scrape_content(url, config, to_string=False, raise_exception=True):
+def scrape_content(url, config, to_string=False, raise_exception=True, window_size=(1366, 784)):
     """ Takes url, configuration as parameters and returns parsed data, as per the configuration """
+    assert window_size is not None
+    assert len(window_size) == 2
+    assert type(window_size[0]) ==int and type(window_size[1]) == int
     assert type(config) is dict
     if len(config.keys()) == 0 :
         return None
     data = None
     try:
-        html = RequestHandler.get_html_content(url)
+        html = RequestHandler.get_html_content(url, window_size=window_size)
         data = PyScrapper(html, config).get_scrapped_config()
         if to_string:
             data = json.dumps(data)
