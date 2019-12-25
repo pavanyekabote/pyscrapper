@@ -79,7 +79,7 @@ config ={
 }  
   
 URL = "https://ionicabizau.net"  
-print(scrapper.scrape_content(URL, config, to_string=True))
+print(scrape_content(URL, config, to_string=True))
 ```
 ```javascript
 // Output
