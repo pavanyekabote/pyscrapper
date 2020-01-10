@@ -2,34 +2,62 @@ import logging as log
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from selenium import webdriver
+from selenium.webdriver.remote.webdriver import WebDriver
 from pkg_resources import resource_filename
 import json
 import warnings
 from .utilities import get_attr, parse_tags
 from .resources.resource_manager import get_phantom_driver_path
+from threading import Condition
+import abc
 warnings.filterwarnings("ignore", category=UserWarning, module=webdriver.__name__)
+
 
 class RequestHandler:
 
-    __DRIVER_PATH = get_phantom_driver_path()
-    __driver =  webdriver.PhantomJS(__DRIVER_PATH)
+    @staticmethod
+    def get_driver():
+        __DRIVER_PATH = get_phantom_driver_path()
+        __headers = {'Accept': '*/*',
+                     'Accept-Encoding': 'gzip, deflate, sdch',
+                     'Accept-Language': 'en-US,en;q=0.8',
+                     'Cache-Control': 'max-age=0',
+                     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36'
+                     }
+        for key, value in enumerate(__headers):
+            capability_key = 'phantomjs.page.customHeaders.{}'.format(key)
+            webdriver.DesiredCapabilities.PHANTOMJS[capability_key] = value
+            __driver = webdriver.PhantomJS(__DRIVER_PATH)
+        return __driver
 
-    __headers = {'Accept': '*/*',
-                 'Accept-Encoding': 'gzip, deflate, sdch',
-                 'Accept-Language': 'en-US,en;q=0.8',
-                 'Cache-Control': 'max-age=0',
-                 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36'
-                 }
-    for key, value in enumerate(__headers):
-        capability_key = 'phantomjs.page.customHeaders.{}'.format(key)
-        webdriver.DesiredCapabilities.PHANTOMJS[capability_key] = value
+    # Thread safety handling variables
+    _is_running = False
+    _lock = Condition()
 
     @staticmethod
     def get_html_content(url, window_size=(1366, 784)):
-        RequestHandler.__driver.set_window_size(*window_size)
-        RequestHandler.__driver.get(url)
-        html = RequestHandler.__driver.find_element_by_tag_name('body').get_attribute("innerHTML")
-        soup = BeautifulSoup(html, "html.parser")
+        RequestHandler._lock.acquire()
+        if RequestHandler._is_running:
+            RequestHandler._lock.wait()
+        soup = None
+        try:
+            RequestHandler._is_running = True
+            driver = RequestHandler.get_driver()
+            driver.set_window_size(*window_size)
+            driver.get(url)
+            html = driver.page_source
+            soup = BeautifulSoup(html, "html.parser")
+            driver.close()
+            RequestHandler._is_running = False
+            RequestHandler._lock.notify_all()
+            RequestHandler._lock.release()
+        except Exception as e:
+            try:
+                RequestHandler._is_running = False
+                RequestHandler._lock.notify_all()
+                RequestHandler._lock.release()
+            except:
+                pass
         return soup
 
 
@@ -179,6 +207,8 @@ class PyScrapper:
         return self.result
 
 
+lock = Condition()
+in_exec = False
 def scrape_content(url, config, to_string=False, raise_exception=True, window_size=(1366, 784)):
     """ Takes url, configuration as parameters and returns parsed data, as per the configuration """
     assert window_size is not None
@@ -188,12 +218,26 @@ def scrape_content(url, config, to_string=False, raise_exception=True, window_si
     if len(config.keys()) == 0 :
         return None
     data = None
+    global lock, in_exec
     try:
+        lock.acquire()
+        if in_exec:
+           lock.wait()
+        in_exec = True
         html = RequestHandler.get_html_content(url, window_size=window_size)
         data = PyScrapper(html, config).get_scrapped_config()
         if to_string:
             data = json.dumps(data)
+        in_exec = False
+        lock.notify_all()
+        lock.release()
     except Exception as e:
+        in_exec = False
+        try:
+            lock.notify_all()
+            lock.release()
+        except:
+            pass
         if isinstance(e,PyScrapeException):
             log.error("Error occured while scraping.",e)
             if raise_exception:
@@ -202,4 +246,3 @@ def scrape_content(url, config, to_string=False, raise_exception=True, window_si
         else:
             raise e
     return data
-
