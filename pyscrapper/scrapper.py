@@ -16,7 +16,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module=webdriver.__name_
 class RequestHandler:
 
     @staticmethod
-    def get_driver():
+    def get_driver() -> WebDriver:
         __DRIVER_PATH = get_phantom_driver_path()
         __headers = {'Accept': '*/*',
                      'Accept-Encoding': 'gzip, deflate, sdch',
@@ -39,7 +39,7 @@ class RequestHandler:
         RequestHandler._lock.acquire()
         if RequestHandler._is_running:
             RequestHandler._lock.wait()
-        soup = None
+        soup, driver = None, None
         try:
             RequestHandler._is_running = True
             driver = RequestHandler.get_driver()
@@ -53,6 +53,8 @@ class RequestHandler:
             RequestHandler._lock.release()
         except Exception as e:
             try:
+                if driver is not None:
+                    driver.close()
                 RequestHandler._is_running = False
                 RequestHandler._lock.notify_all()
                 RequestHandler._lock.release()
@@ -206,9 +208,6 @@ class PyScrapper:
             raise PyScrapeException(e)
         return self.result
 
-
-lock = Condition()
-in_exec = False
 def scrape_content(url, config, to_string=False, raise_exception=True, window_size=(1366, 784)):
     """ Takes url, configuration as parameters and returns parsed data, as per the configuration """
     assert window_size is not None
@@ -218,26 +217,12 @@ def scrape_content(url, config, to_string=False, raise_exception=True, window_si
     if len(config.keys()) == 0 :
         return None
     data = None
-    global lock, in_exec
     try:
-        lock.acquire()
-        if in_exec:
-           lock.wait()
-        in_exec = True
         html = RequestHandler.get_html_content(url, window_size=window_size)
         data = PyScrapper(html, config).get_scrapped_config()
         if to_string:
             data = json.dumps(data)
-        in_exec = False
-        lock.notify_all()
-        lock.release()
     except Exception as e:
-        in_exec = False
-        try:
-            lock.notify_all()
-            lock.release()
-        except:
-            pass
         if isinstance(e,PyScrapeException):
             log.error("Error occured while scraping.",e)
             if raise_exception:
