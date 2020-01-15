@@ -19,15 +19,12 @@ class RequestHandler:
     def get_driver() -> WebDriver:
         __DRIVER_PATH = get_phantom_driver_path()
         __headers = {'Accept': '*/*',
-                     'Accept-Encoding': 'gzip, deflate, sdch',
-                     'Accept-Language': 'en-US,en;q=0.8',
-                     'Cache-Control': 'max-age=0',
                      'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36'
                      }
-        for key, value in enumerate(__headers):
+        for key, value in __headers.items():
             capability_key = 'phantomjs.page.customHeaders.{}'.format(key)
             webdriver.DesiredCapabilities.PHANTOMJS[capability_key] = value
-            __driver = webdriver.PhantomJS(__DRIVER_PATH)
+        __driver = webdriver.PhantomJS(__DRIVER_PATH)
         return __driver
 
     # Thread safety handling variables
