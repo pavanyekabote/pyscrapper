@@ -5,7 +5,7 @@ with open('README.md') as f:
     long_description = f.read()
 setup(
     name='pyscrapper',
-    version='0.1.3',
+    version='1.0.0',
     author='Pavan Kumar Yekabote',
     url='https://github.com/pavanyekabote/pyscrapper',
     long_description = long_description,
@@ -13,7 +13,7 @@ setup(
     description='A project to scrape web content as per the configuration',
     packages=setuptools.find_packages(),
     python_requires='>=3',
-    install_requires=['selenium==3.141.0', 'bs4 ==0.0.1'],
+    install_requires=['selenium==3.141.0', 'bs4 ==0.0.1', 'urllib3==1.25.7'],
     include_package_data=True
 )
 
