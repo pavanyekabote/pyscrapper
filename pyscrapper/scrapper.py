@@ -120,7 +120,7 @@ class PyScrapper:
                 self.result = result_list
 
             if get_attr(self.config, self.__SELECTOR) is not None:
-                html = parse_tags(html, get_attr(self.config, self.__SELECTOR), eq=self.element_index)
+                html = parse_tags(html, get_attr(self.config, self.__SELECTOR))
                 if not self.is_list:
                     self.result = self.as_text(html[0]) if len(html) > 0 else self.as_text(html)
                 else:
@@ -129,15 +129,17 @@ class PyScrapper:
             if get_attr(self.config, self.__ATTR) is not None:
                 object_key = get_attr(self.config, self.__ATTR)
                 if not self.is_list:
-                    html = html[0] if len(html) > 0 else html
+                    idx = self.element_index if (html is not None and self.element_index is not None
+                                                 and len(html) > self.element_index) else 0
+                    html = html[idx] if len(html) > 0 else html
                     html = get_attr(html, object_key)
                 else:
-                    html = [get_attr(obj, object_key) for obj in html] if len(html) > 0 else html
+                    html = [get_attr(obj, object_key) for obj in html] if len(html) > 0 else get_attr(html, object_key)
                         # map(lambda obj: get_attr(obj, object_key), html) if len(html) > 0 else html
                 self.result = html
 
             if get_attr(self.config, self.__EQ) is not None:
-                if self.is_list or (len(self.result) > 0 and type(self.result) == list):
+                if self.is_list or (self.result is not None and len(self.result) > 0 and type(self.result) == list):
                     self.result = self.result[self.element_index]
 
             # Parse for all keys
