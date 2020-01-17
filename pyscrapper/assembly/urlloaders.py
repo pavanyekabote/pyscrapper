@@ -106,7 +106,7 @@ class PhantomUrlLoader(UrlLoader):
         super(PhantomUrlLoader, self).__init__(pool, headers=headers)
         self._driver_path = driver_path
 
-    def load_url(self, url, **kwargs):
+    def load_url(self, url, pre_exec=None, post_exec=None, **kwargs):
         with self._observers_lock:
             if len(self._observers) == 0:
                 warnings.formatwarning('',category=UserWarning, line=0, lineno=1, filename=None)
@@ -124,10 +124,22 @@ class PhantomUrlLoader(UrlLoader):
             future = self._pool.submit(self._wait_to_load_from_driver, url, self._create_driver())
             future.add_done_callback(callback)
 
-    def _wait_to_load_from_driver(self, url, driver):
+    def _wait_to_load_from_driver(self, url, driver, pre_exec=None, post_exec=None,   *args, **kwargs):
+        if pre_exec is not None:
+            assert hasattr(pre_exec, '__call__'), 'pre_exec should be a callable'
+        if post_exec is not None:
+            assert  hasattr(post_exec, '__call__'), 'post_exec should be a callable'
+
         if driver is not None:
             driver.maximize_window()
+            # Call pre_exec method before executing the request
+            if pre_exec is not None:
+                pre_exec(driver)
             driver.get(url)
+            # call post_exec method passing driver object to it.
+            if post_exec is not None:
+                post_exec(driver)
+
             source = driver.page_source
             driver.close()
             return source
