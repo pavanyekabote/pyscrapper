@@ -106,7 +106,16 @@ class PhantomUrlLoader(UrlLoader):
         super(PhantomUrlLoader, self).__init__(pool, headers=headers)
         self._driver_path = driver_path
 
-    def load_url(self, url, pre_exec=None, post_exec=None, **kwargs):
+    def load_url(self, url, **kwargs):
+        """
+        url : URL to be loaded by the url loader.
+        pre_exec: This parameter takes a method/function as input and calls that method/function
+                passing the selenium web driver object into it. The method/function is called before given url is loaded into the driver
+        post_exec: This parameter takes a method/function as input and calls that method/function passing the selenium web driver
+                object into it. The method/function is called after given url is loaded into the driver
+
+        This feature allows developers to perform some extra operations on the web driver, by directly accessing the webdriver.
+        """
         with self._observers_lock:
             if len(self._observers) == 0:
                 warnings.formatwarning('',category=UserWarning, line=0, lineno=1, filename=None)
@@ -118,13 +127,13 @@ class PhantomUrlLoader(UrlLoader):
             if exc:
                 self._load_url_error(url, exc, tb, **kwargs)
             else:
-                self._load_url_success(url, f.result(), pre_exec=pre_exec, post_exec=post_exec, **kwargs)
+                self._load_url_success(url, f.result(),**kwargs)
 
         with self._pool_lock:
-            future = self._pool.submit(self._wait_to_load_from_driver, url, self._create_driver())
+            future = self._pool.submit(self._wait_to_load_from_driver, url, self._create_driver(), **kwargs)
             future.add_done_callback(callback)
 
-    def _wait_to_load_from_driver(self, url, driver, pre_exec=None, post_exec=None,   *args, **kwargs):
+    def _wait_to_load_from_driver(self, url, driver, pre_exec=None, post_exec=None, *args, **kwargs):
         if pre_exec is not None:
             assert hasattr(pre_exec, '__call__'), 'pre_exec should be a callable'
         if post_exec is not None:
