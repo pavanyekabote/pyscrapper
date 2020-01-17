@@ -118,7 +118,7 @@ class PhantomUrlLoader(UrlLoader):
             if exc:
                 self._load_url_error(url, exc, tb, **kwargs)
             else:
-                self._load_url_success(url, f.result(), **kwargs)
+                self._load_url_success(url, f.result(), pre_exec=pre_exec, post_exec=post_exec, **kwargs)
 
         with self._pool_lock:
             future = self._pool.submit(self._wait_to_load_from_driver, url, self._create_driver())
