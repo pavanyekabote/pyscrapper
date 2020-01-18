@@ -12,6 +12,7 @@ from datetime import datetime
 import os
 import warnings
 from selenium import webdriver
+import signal
 from pyscrapper.resources.resource_manager import get_phantom_driver_path
 
 __all__ = ['UrlLoader', 'BrowserLessUrlLoader', 'PhantomUrlLoader']
@@ -140,17 +141,19 @@ class PhantomUrlLoader(UrlLoader):
             assert  hasattr(post_exec, '__call__'), 'post_exec should be a callable'
 
         if driver is not None:
-            driver.maximize_window()
-            # Call pre_exec method before executing the request
-            if pre_exec is not None:
-                pre_exec(driver)
-            driver.get(url)
-            # call post_exec method passing driver object to it.
-            if post_exec is not None:
-                post_exec(driver)
-
-            source = driver.page_source
-            driver.close()
+            try:
+                driver.maximize_window()
+                # Call pre_exec method before executing the request
+                if pre_exec is not None:
+                    pre_exec(driver)
+                driver.get(url)
+                # call post_exec method passing driver object to it.
+                if post_exec is not None:
+                    post_exec(driver)
+                source = driver.page_source
+            finally:
+                driver.service.process.send_signal(signal.SIGTERM)
+                driver.quit()
             return source
         return None
 
@@ -168,7 +171,7 @@ class PhantomUrlLoader(UrlLoader):
             for key, value in self._headers.items():
                 capability_key = 'phantomjs.page.customHeaders.{}'.format(key)
                 webdriver.DesiredCapabilities.PHANTOMJS[capability_key] = value
-        driver = webdriver.PhantomJS(path)
+        driver = webdriver.PhantomJS(path, service_log_path=os.path.devnull)
         return driver
 
     def add_observer(self, observer: Observer):
