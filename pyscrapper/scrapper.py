@@ -11,8 +11,8 @@ from .resources.resource_manager import get_phantom_driver_path
 from threading import Condition
 import abc
 warnings.filterwarnings("ignore", category=UserWarning, module=webdriver.__name__)
-
-
+from inspect import signature, _empty
+import signal, os
 class RequestHandler:
 
     @staticmethod
@@ -30,35 +30,37 @@ class RequestHandler:
         return __driver
 
     # Thread safety handling variables
-    _is_running = False
     _lock = Condition()
-
+    MAX_WORKERS = os.cpu_count()
+    _count = 0
     @staticmethod
-    def get_html_content(url, window_size=(1366, 784)):
-        RequestHandler._lock.acquire()
-        if RequestHandler._is_running:
-            RequestHandler._lock.wait()
+    def get_html_content(url, window_size=(1366, 784), pre_exec=None, post_exec=None, **kwargs):
+        if pre_exec is not None:
+            assert hasattr(pre_exec, '__call__'), 'pre_exec should be a callable'
+        if post_exec is not None:
+            assert  hasattr(post_exec, '__call__'), 'post_exec should be a callable'
+
         soup, driver = None, None
+        # Initialize lock
+        RequestHandler._lock.acquire()
+        if RequestHandler._count >= RequestHandler.MAX_WORKERS:
+            RequestHandler._lock.wait()
         try:
-            RequestHandler._is_running = True
             driver = RequestHandler.get_driver()
+            RequestHandler._count += 1
             driver.set_window_size(*window_size)
             driver.get(url)
             html = driver.page_source
             soup = BeautifulSoup(html, "html.parser")
-            driver.close()
-            RequestHandler._is_running = False
+        finally:
+            if driver is not None:
+                driver.service.process.send_signal(signal=signal.SIGTERM)
+                driver.close()
+            # Lock clean up
+            RequestHandler._count -= 1
             RequestHandler._lock.notify_all()
             RequestHandler._lock.release()
-        except Exception as e:
-            try:
-                if driver is not None:
-                    driver.close()
-                RequestHandler._is_running = False
-                RequestHandler._lock.notify_all()
-                RequestHandler._lock.release()
-            except:
-                pass
+
         return soup
 
 
@@ -66,16 +68,16 @@ class PyScrapeException(Exception):
     """ Custom exception if any exceptions arise while parsing html content"""
     pass
 
+
 class PyScrapper:
 
     __LIST_ITEM, __DATA = 'listItem', "data"
     __SELECTOR, __ATTR = "selector", "attr"
-    __EQ = "eq"
-
+    __EQ, __FUNCTION = "eq", "function"
     CONST_KEYS = {__LIST_ITEM: True, __DATA: True, __SELECTOR: True,
-                  __ATTR: True, __EQ: True }
+                  __ATTR: True, __EQ: True, __FUNCTION: True }
 
-    def __init__(self, html, config, is_list = False, name=''):
+    def __init__(self, html, config, is_list=False, name=''):
         self.is_list = is_list
         self.result = {}
         self.config = config
@@ -87,13 +89,18 @@ class PyScrapper:
     @staticmethod
     def __check_and_join_html(html):
         """ This method helps to make a list of html as one html
-        and checks if the current html can further be parsed. Returns html: BeautifulSoup, can_further_be_parsed : boolean"""
+        and checks if the current html can further be parsed.
+        Returns html: BeautifulSoup, can_further_be_parsed : boolean"""
         can_be_parsed_next = False
         if type(html) == list:
             html = ' '.join([str(lis) for lis in html])
 
-        if html is not None and len(html) != 0 and (type(html) is BeautifulSoup or type(html) is str or type(html) is Tag):
-            html = html if type(html) == BeautifulSoup  else BeautifulSoup(str(html), "html.parser")
+        if html is not None and len(html) != 0 and \
+                (type(html) is BeautifulSoup or type(html)
+                 is str or type(html) is Tag):
+
+            html = html if type(html) == BeautifulSoup  \
+                        else BeautifulSoup(str(html), "html.parser")
             can_be_parsed_next = True
         return html, can_be_parsed_next
 
@@ -101,7 +108,8 @@ class PyScrapper:
         try:
             if get_attr(self.config, self.__ATTR) is None:
                 if type(soup_element) == list and len(soup_element) > 0:
-                    return [str(soup_elem.text).strip() for soup_elem in soup_element if soup_elem is not None]
+                    return [str(soup_elem.text).strip()
+                            for soup_elem in soup_element if soup_elem is not None]
                 else:
                     return  str(soup_element.text).strip()
         except:
@@ -135,12 +143,25 @@ class PyScrapper:
                     html = get_attr(html, object_key)
                 else:
                     html = [get_attr(obj, object_key) for obj in html] if len(html) > 0 else get_attr(html, object_key)
-                        # map(lambda obj: get_attr(obj, object_key), html) if len(html) > 0 else html
                 self.result = html
 
             if get_attr(self.config, self.__EQ) is not None:
                 if self.is_list or (self.result is not None and len(self.result) > 0 and type(self.result) == list):
                     self.result = self.result[self.element_index]
+
+            if get_attr(self.config, self.__FUNCTION) is not None:
+                cb = get_attr(self.config, self.__FUNCTION)
+                assert hasattr(cb, '__call__'), 'function must be a callable type'
+                sig = signature(cb)
+                assert len(list(sig.parameters)) > 0, f'{ cb } ' \
+                                                      f'function must have atleast one parameter for parsed object'
+                name = list(sig.parameters)[0]
+                default = sig.parameters[name].default
+                if default == _empty:
+                    self.result = cb(self.result)
+                else:
+                    kwarg = {name : self.result}
+                    self.result = cb(**kwarg)
 
             # Parse for all keys
             keys = self.config.keys()
@@ -209,7 +230,7 @@ class PyScrapper:
             raise PyScrapeException(e)
         return self.result
 
-def scrape_content(url, config, to_string=False, raise_exception=True, window_size=(1366, 784)):
+def scrape_content(url, config, to_string=False, raise_exception=True, window_size=(1366, 784), **kwargs):
     """ Takes url, configuration as parameters and returns parsed data, as per the configuration """
     assert window_size is not None
     assert len(window_size) == 2
@@ -219,7 +240,7 @@ def scrape_content(url, config, to_string=False, raise_exception=True, window_si
         return None
     data = None
     try:
-        html = RequestHandler.get_html_content(url, window_size=window_size)
+        html = RequestHandler.get_html_content(url, window_size=window_size, **kwargs)
         data = PyScrapper(html, config).get_scrapped_config()
         if to_string:
             data = json.dumps(data)
