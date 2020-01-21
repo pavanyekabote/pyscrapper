@@ -54,7 +54,14 @@ class RequestHandler:
             driver = RequestHandler.get_driver()
             RequestHandler._count += 1
             driver.set_window_size(*window_size)
+            # Execute driver operation before loading url
+            if pre_exec is not None:
+                pre_exec(driver)
             driver.get(url)
+            # Execute any operation on driver after url is loaded
+            if post_exec is not None:
+                post_exec(driver)
+
             html = driver.page_source
             soup = BeautifulSoup(html, "html.parser")
         finally:
