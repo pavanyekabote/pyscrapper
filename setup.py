@@ -5,7 +5,7 @@ with open('README.md') as f:
     long_description = f.read()
 setup(
     name='pyscrapper',
-    version='1.0.0',
+    version='0.1.3',
     author='Pavan Kumar Yekabote',
     url='https://github.com/pavanyekabote/pyscrapper',
     long_description = long_description,
