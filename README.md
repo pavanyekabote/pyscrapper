@@ -94,7 +94,7 @@ print(scrape_content(URL, config, to_string=True))
 }
 ```
 ---
-List Example: 
+**List** Example: 
 ```python
 
 from pyscrapper.scrapper import scrape_content
@@ -130,28 +130,14 @@ print(scrape_content(URL, config, to_string=True))
     {
       "title": "FAQ",
       "url": "/faq"
-    },
-    {
-      "title": "Training",
-      "url": "/training"
-    },
-    {
-      "title": "Donate",
-      "url": "/donate"
-    },
-    {
-      "title": "Contact",
-      "url": "/contact"
-    },
-    {
-      "title": "CV",
-      "url": "/cv"
     }
+    // ... truncating some part of output, due to space constraint.
   ]
 }
 ```
 ---
-function example:
+
+**Function** example:
 ```python3
 from pyscrapper.scrapper import scrape_content
 
@@ -194,27 +180,8 @@ print(scrape_content(URL, config, to_string=True))
       "title": "FAQ",
       "url": "/faq",
       "title_length": 3
-    },
-    {
-      "title": "Training",
-      "url": "/training",
-      "title_length": 8
-    },
-    {
-      "title": "Donate",
-      "url": "/donate",
-      "title_length": 6
-    },
-    {
-      "title": "Contact",
-      "url": "/contact",
-      "title_length": 7
-    },
-    {
-      "title": "CV",
-      "url": "/cv",
-      "title_length": 2
     }
+    // ... truncating some part of output, due to space constraint.
   ]
 }
 ```
