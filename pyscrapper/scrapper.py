@@ -11,7 +11,7 @@ import warnings
 from .utilities import get_attr, parse_tags
 from .resources.resource_manager import get_phantom_driver_path
 from threading import Condition
-from inspect import signature
+from inspect import signature, _empty
 import abc
 warnings.filterwarnings("ignore", category=UserWarning, module=webdriver.__name__)
 
@@ -59,8 +59,8 @@ class RequestHandler:
             soup = BeautifulSoup(html, "html.parser")
         finally:
             if driver is not None:
-                driver.service.process.send_signal(signal=signal.SIGTERM)
                 driver.close()
+
             # Lock clean up
             RequestHandler._count -= 1
             RequestHandler._lock.notify_all()
@@ -114,7 +114,7 @@ class PyScrapper:
                     return [str(soup_elem.text).strip()
                             for soup_elem in soup_element if soup_elem is not None]
                 else:
-                    return  str(soup_element.text).strip()
+                    return str(soup_element.text).strip()
         except:
             pass
 
