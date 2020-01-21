@@ -1,3 +1,5 @@
+import signal
+import os
 import logging as log
 from bs4 import BeautifulSoup
 from bs4.element import Tag
@@ -9,38 +11,41 @@ import warnings
 from .utilities import get_attr, parse_tags
 from .resources.resource_manager import get_phantom_driver_path
 from threading import Condition
+from inspect import signature
 import abc
 warnings.filterwarnings("ignore", category=UserWarning, module=webdriver.__name__)
-from inspect import signature, _empty
-import signal, os
+
+
 class RequestHandler:
+
+    # Thread safety handling variables
+    _lock: Condition = Condition()
+    _count = 0
+    MAX_WORKERS = os.cpu_count()
 
     @staticmethod
     def get_driver() -> WebDriver:
-        __DRIVER_PATH = get_phantom_driver_path()
-        __headers = {'Accept': '*/*',
-                     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) \
+        driver_path = get_phantom_driver_path()
+        headers = {'Accept': '*/*',
+                   'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) \
                                     AppleWebKit/537.36 (KHTML, like Gecko) \
                                     Chrome/79.0.3945.117 Safari/537.36'}
 
-        for key, value in __headers.items():
+        for key, value in headers.items():
             capability_key = 'phantomjs.page.customHeaders.{}'.format(key)
             webdriver.DesiredCapabilities.PHANTOMJS[capability_key] = value
-        __driver = webdriver.PhantomJS(__DRIVER_PATH)
-        return __driver
+        driver = webdriver.PhantomJS(driver_path)
+        return driver
 
-    # Thread safety handling variables
-    _lock = Condition()
-    MAX_WORKERS = os.cpu_count()
-    _count = 0
+
     @staticmethod
-    def get_html_content(url, window_size=(1366, 784), pre_exec=None, post_exec=None, **kwargs):
+    def get_html_content(url, window_size=(1366, 784), pre_exec=None, post_exec=None):
         if pre_exec is not None:
             assert hasattr(pre_exec, '__call__'), 'pre_exec should be a callable'
         if post_exec is not None:
-            assert  hasattr(post_exec, '__call__'), 'post_exec should be a callable'
-
+            assert hasattr(post_exec, '__call__'), 'post_exec should be a callable'
         soup, driver = None, None
+
         # Initialize lock
         RequestHandler._lock.acquire()
         if RequestHandler._count >= RequestHandler.MAX_WORKERS:
@@ -60,7 +65,6 @@ class RequestHandler:
             RequestHandler._count -= 1
             RequestHandler._lock.notify_all()
             RequestHandler._lock.release()
-
         return soup
 
 
@@ -84,7 +88,6 @@ class PyScrapper:
         self.key_name = name
         self.html, self.can_parse_next = self.__check_and_join_html(html)
         self.element_index = self.__get_index_to_select(config)
-        # print("Config ", self.config, " Contenx" , self.can_parse_next)
 
     @staticmethod
     def __check_and_join_html(html):
@@ -216,8 +219,10 @@ class PyScrapper:
 
         sub_block_data = []
         if tag_parsed_html != '' or len(tag_parsed_html) >0:
-            # Iterate through each data block, and run each configuration on each data block.
-            sub_block_data = [PyScrapper(tag_html,get_attr(self.config, self.__DATA)).get_scrapped_config()
+            # Iterate through each data block, and run each
+            # configuration on each data block.
+            sub_block_data = [PyScrapper(tag_html,get_attr(self.config, self.__DATA))
+                                  .get_scrapped_config()
                               for tag_html in tag_parsed_html]
 
         return sub_block_data
@@ -229,6 +234,7 @@ class PyScrapper:
         except Exception as e:
             raise PyScrapeException(e)
         return self.result
+
 
 def scrape_content(url, config, to_string=False, raise_exception=True, window_size=(1366, 784), **kwargs):
     """ Takes url, configuration as parameters and returns parsed data, as per the configuration """
