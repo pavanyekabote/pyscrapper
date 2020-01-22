@@ -131,15 +131,15 @@ class PhantomUrlLoader(UrlLoader):
                 self._load_url_success(url, f.result(),**kwargs)
 
         with self._pool_lock:
-            future = self._pool.submit(self._wait_to_load_from_driver, url, self._create_driver(), **kwargs)
+            future = self._pool.submit(self._wait_to_load_from_driver, url, **kwargs)
             future.add_done_callback(callback)
 
-    def _wait_to_load_from_driver(self, url, driver, pre_exec=None, post_exec=None, *args, **kwargs):
+    def _wait_to_load_from_driver(self, url, pre_exec=None, post_exec=None, *args, **kwargs):
         if pre_exec is not None:
             assert hasattr(pre_exec, '__call__'), 'pre_exec should be a callable'
         if post_exec is not None:
             assert  hasattr(post_exec, '__call__'), 'post_exec should be a callable'
-
+        driver = self._create_driver()
         if driver is not None:
             try:
                 driver.maximize_window()
