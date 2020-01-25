@@ -74,6 +74,9 @@ class PyScrapeException(Exception):
 
 
 class PyScrapper:
+    """
+    Each block of given configuration is parsed by an object of PyScrapper class.
+    """
 
     __LIST_ITEM, __DATA = 'listItem', "data"
     __SELECTOR, __ATTR = "selector", "attr"
@@ -82,6 +85,15 @@ class PyScrapper:
                   __ATTR: True, __EQ: True, __FUNCTION: True }
 
     def __init__(self, html, config, is_list=False, name=''):
+        """
+        :type html: str
+        :param html: html field takes the html page that needs to be scrapped
+
+        :type config: dict
+        :param config: This field takes the configuration, which tells the parser
+                        * which part of html need to be taken and parsed
+                        * how the parsed data has to be structured
+        """
         self.is_list = is_list
         self.result = {}
         self.config = config
@@ -121,7 +133,10 @@ class PyScrapper:
         return soup_element
 
     def __parse_configuration(self):
-        """ This method parses and grabs elements from html, creates relevant object(s) as per the configuration """
+        """
+        This method parses and grabs elements from html,
+        creates relevant object(s) as per the configuration
+        """
         html = self.html
         if type(self.config) == dict:
             """ check if the configuration is dict """
@@ -228,6 +243,10 @@ class PyScrapper:
         return sub_block_data
 
     def get_scrapped_config(self):
+        """
+        This method returns the parsed content
+        :returns: dict
+        """
         try:
             if self.can_parse_next:
                 self.__parse_configuration()
@@ -237,7 +256,21 @@ class PyScrapper:
 
 
 def scrape_content(url, config, to_string=False, raise_exception=True, window_size=(1366, 784), **kwargs):
-    """ Takes url, configuration as parameters and returns parsed data, as per the configuration """
+    """
+    Takes url, configuration as parameters,
+    loads the given url in web browser, then parses the html
+    as per the given configuration data.
+
+    :type url: string
+    :param url: URL of webpage to be scrapped
+
+    :type config: dict
+    :param config: configuration dictionary which describes which part of html should be scraped and
+                    how it should be modelled.
+
+    :type to_string: bool
+    :param to_string: returns the scrapped and modelled json as string
+    """
     assert window_size is not None
     assert len(window_size) == 2
     assert type(window_size[0]) ==int and type(window_size[1]) == int
