@@ -9,7 +9,7 @@ setup(
     author='Pavan Kumar Yekabote',
     url='https://github.com/pavanyekabote/pyscrapper',
     long_description = long_description,
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst",
     description='A configurable web scrapping tool',
     packages=setuptools.find_packages(),
     python_requires='>=3',
