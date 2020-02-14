@@ -6,7 +6,8 @@ share/
 pyvenv.cfg
 .idea/
 test.py
-
+./config.py
+./drivers.py
 
 # Created by https://www.gitignore.io/api/python,django,intellij,pycharm
 # Edit at https://www.gitignore.io/?templates=python,django,intellij,pycharm

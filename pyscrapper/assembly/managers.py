@@ -46,7 +46,7 @@ class StandardScrapeManager(BaseScrapeManager, Observer):
         assert isinstance(url, str), 'url must be a str type'
         assert isinstance(config, dict), 'config must be dict'
         with self._scrape_lock:
-            id = uuid.uuid4()
+            id = str(uuid.uuid4())
             self._id_data_map[id] = (url, config)
             self._url_loader.load_url(url, id=id, **kwargs)
             return id
@@ -59,17 +59,23 @@ class StandardScrapeManager(BaseScrapeManager, Observer):
             self._observers.clear()
 
     def on_url_loaded(self, url, response, **kwargs):
-        if 'id' in kwargs:
+        if 'id' in kwargs.keys():
             id = kwargs['id']
-            url, config = self._id_data_map[id]
-            del self._id_data_map[id]
+            with self._scrape_lock:
+                url, config = self._id_data_map[id]
+                del self._id_data_map[id]
             obj = None
-            if response.status == 200:
-                data = response.data.decode('utf-8')
+            if response is not None:
+                data = response
                 obj = self._scrapper(data, config).get_scrapped_config()
                 with self._observers_lock:
                     for observer in self._observers:
                         observer.on_parse_completed(url, obj, id=str(id))
+            else:
+                with self._observers_lock:
+                    for observer in self._observers:
+                        observer.on_parse_completed(url, {}, id=str(id))
+
 
     def on_parse_completed(self, url, obj, **kwargs):
         pass
