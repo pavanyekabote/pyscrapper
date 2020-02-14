@@ -19,7 +19,6 @@ from .resources.resource_manager import get_phantom_driver_path
 from threading import Condition
 from inspect import signature, _empty
 import abc
-from .custom_exceptions import PyScrapeException
 warnings.filterwarnings("ignore", category=UserWarning, module=webdriver.__name__)
 
 
@@ -230,7 +229,7 @@ class PyScrapper:
         # Check if DATA field is available or not
         data_value = get_attr(self.config, self.__DATA, none_if_empty=True)
         tag_parsed_html = parse_tags(html, get_attr(self.config, self.__LIST_ITEM))
-        if data_value is None:
+        if data_value is None or len(data_value.keys()) == 0:
             result = [str(item.text).strip() for item in tag_parsed_html]
             return result
 
