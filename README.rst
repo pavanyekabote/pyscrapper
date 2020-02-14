@@ -1,10 +1,11 @@
-PyScrapper - A Configurable Web Scrapping tool
-===============================================
+PyScrapper
+===========
 
 .. image:: https://badge.fury.io/py/pyscrapper.svg
     :target: https://badge.fury.io/py/pyscrapper
 .. image:: https://pepy.tech/badge/pyscrapper
     :target: https://pepy.tech/project/pyscrapper
+
 
 PyScrapper is a web scrapping tool. It helps to scrape webpages and form a meaningful json object, as per the given configuration. Configuration is what tells the scrapper, which blocks of the html needs to be parsed and how they should be structurized for ease of use.
 
