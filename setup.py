@@ -10,7 +10,7 @@ setup(
     url='https://github.com/pavanyekabote/pyscrapper',
     long_description = long_description,
     long_description_content_type="text/markdown",
-    description='A project to scrape web content as per the configuration',
+    description='A configurable web scrapping tool',
     packages=setuptools.find_packages(),
     python_requires='>=3',
     install_requires=['selenium==3.141.0', 'bs4 ==0.0.1', 'urllib3==1.25.7'],
