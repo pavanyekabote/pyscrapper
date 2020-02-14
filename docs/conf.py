@@ -24,7 +24,8 @@ author = 'Pavan Kumar Yekabote'
 # The full version, including alpha/beta/rc tags
 release = 'v1.0.0'
 
-
+source_suffix = '.rst'
+master_doc = 'index'
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
