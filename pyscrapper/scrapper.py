@@ -1,3 +1,9 @@
+"""
+Scrapper.py
+=======================================
+The core scrapping module of Pyscrapper.
+"""
+
 import signal
 import os
 import logging as log
@@ -13,6 +19,7 @@ from .resources.resource_manager import get_phantom_driver_path
 from threading import Condition
 from inspect import signature, _empty
 import abc
+from .custom_exceptions import PyScrapeException
 warnings.filterwarnings("ignore", category=UserWarning, module=webdriver.__name__)
 
 
@@ -66,11 +73,6 @@ class RequestHandler:
             RequestHandler._lock.notify_all()
             RequestHandler._lock.release()
         return soup
-
-
-class PyScrapeException(Exception):
-    """ Custom exception if any exceptions arise while parsing html content"""
-    pass
 
 
 class PyScrapper:
@@ -245,7 +247,6 @@ class PyScrapper:
     def get_scrapped_config(self):
         """
         This method returns the parsed content
-        :returns: dict
         """
         try:
             if self.can_parse_next:
@@ -270,6 +271,8 @@ def scrape_content(url, config, to_string=False, raise_exception=True, window_si
 
     :type to_string: bool
     :param to_string: returns the scrapped and modelled json as string
+
+    :return: parsed data
     """
     assert window_size is not None
     assert len(window_size) == 2
@@ -292,3 +295,7 @@ def scrape_content(url, config, to_string=False, raise_exception=True, window_si
         else:
             raise e
     return data
+
+
+class PyScrapeException(Exception):
+    pass
