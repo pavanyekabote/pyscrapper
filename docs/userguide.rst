@@ -29,6 +29,15 @@ Basic Concepts
 
 PyScrapper has an assembly module which is an assembly of base modules:
 
-* managers
-* loaders
+* urlloaders
 * observers
+* managers
+
+*UrlLoaders* are different types of url request makers such as a Web Browser,
+a simple GET request anything which is capable of loading an url and give the resultant html
+
+*Observers* are those elements which is triggered when an url loading is completed and scrapping is completed.
+
+*Managers* manage the load balancing tasks and restrict the number requests executing parallely
+as per the user's configuration. They load the url in an :file:`urlloader`, once the result is received
+from the :file:`observer` then parse the html content using scrapping module, and again pushes back the final scrapped result to a user registered observer.
