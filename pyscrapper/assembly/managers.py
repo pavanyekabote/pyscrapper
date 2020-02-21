@@ -5,13 +5,16 @@ from pyscrapper.scrapper import PyScrapper
 import uuid
 from threading import RLock
 
-__all__ = ['StandardScrapeManager']
+__all__ = ['StandardScrapeManager', 'BaseScrapeManager']
 
 
 class BaseScrapeManager(Observable, metaclass=abc.ABCMeta):
     """A scrape manager which takes in an UrlLoader instance,
      It manages takes responsibility to load all the urls and scrape them
-     as per the given configuration."""
+     as per the given configuration.
+
+     :param url_loader: Expects an UrlLoader instance, using which the url requests can be made.
+     """
 
     def __init__(self, url_loader: UrlLoader):
         assert isinstance(url_loader, UrlLoader), 'Url loader must be an instance of UrlLoader Implemented classes'
@@ -32,8 +35,6 @@ class BaseScrapeManager(Observable, metaclass=abc.ABCMeta):
 
 
 class StandardScrapeManager(BaseScrapeManager, Observer):
-
-    __doc__ = super.__doc__
 
     def __init__(self, url_loader: UrlLoader):
         assert isinstance(url_loader, UrlLoader)

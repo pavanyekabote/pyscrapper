@@ -90,7 +90,7 @@ class PyScrapper:
     __SELECTOR, __ATTR = "selector", "attr"
     __EQ, __FUNCTION = "eq", "function"
     CONST_KEYS = {__LIST_ITEM: True, __DATA: True, __SELECTOR: True,
-                  __ATTR: True, __EQ: True, __FUNCTION: True }
+                  __ATTR: True, __EQ: True, __FUNCTION: True}
 
     def __init__(self, html, config, is_list=False, name=''):
         """
