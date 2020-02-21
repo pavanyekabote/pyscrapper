@@ -1,4 +1,18 @@
-Assembly
-========
+:mod:`pyscrapper.assembly.urlloaders`
+==========================
+.. automodule:: pyscrapper.assembly.urlloaders
 
-This contains list of assembly
+API
+---
+
+.. autoclass:: UrlLoader
+    :members:
+    :show-inheritance:
+
+.. autoclass:: BrowserLessUrlLoader
+    :members:
+    :show-inheritance:
+
+.. autoclass:: PhantomUrlLoader
+    :members:
+    :show-inheritance:
