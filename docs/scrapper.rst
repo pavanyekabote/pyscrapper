@@ -12,5 +12,5 @@ API
 .. autoclass:: RequestHandler
     :members:
 
-.. automethod:: scrape_content
+.. autofunction:: scrape_content
 

@@ -24,7 +24,19 @@ warnings.filterwarnings("ignore", category=UserWarning, module=webdriver.__name_
 
 
 class RequestHandler:
+    """
+        This class, holds the basic configurations by which the synchronous scrape_content method loads url.
 
+        :MAX_WORKERS:
+
+        * This property limits the RequestHandler to perform MAX_WORKERS number of request only, when \
+        the url loading is done in a multi threaded/ multi process environment.
+
+        * Default value is set to count of cpu's in current system.
+
+        .. note:: Eg. RequestHandler.MAX_WORKERS = 2 # Allows only 2 url loaders to be executed \
+        parallelly when application is in parallel execution environment.
+    """
     # Thread safety handling variables
     _lock: Condition = Condition()
     _count = 0
@@ -43,7 +55,6 @@ class RequestHandler:
             webdriver.DesiredCapabilities.PHANTOMJS[capability_key] = value
         driver = webdriver.PhantomJS(driver_path)
         return driver
-
 
     @staticmethod
     def get_html_content(url, window_size=(1366, 784), pre_exec=None, post_exec=None):
@@ -188,7 +199,7 @@ class PyScrapper:
                 if default == _empty:
                     self.result = cb(self.result)
                 else:
-                    kwarg = {name : self.result}
+                    kwarg = {name: self.result}
                     self.result = cb(**kwarg)
 
             # Parse for all keys
@@ -266,6 +277,7 @@ class PyScrapper:
 
 def scrape_content(url, config, to_string=False, raise_exception=True, window_size=(1366, 784), **kwargs):
     """
+    It processes, the operation in a synchronized way.
     Takes url, configuration as parameters,
     loads the given url in web browser, then parses the html
     as per the given configuration data.
@@ -284,9 +296,9 @@ def scrape_content(url, config, to_string=False, raise_exception=True, window_si
     """
     assert window_size is not None
     assert len(window_size) == 2
-    assert type(window_size[0]) ==int and type(window_size[1]) == int
+    assert type(window_size[0]) == int and type(window_size[1]) == int
     assert type(config) is dict
-    if len(config.keys()) == 0 :
+    if len(config.keys()) == 0:
         return None
     data = None
     try:
