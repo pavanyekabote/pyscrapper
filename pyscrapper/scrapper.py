@@ -1,7 +1,8 @@
 """
-Scrapper.py
+Scrapper
 =======================================
-The core scrapping module of Pyscrapper.
+The core scrapping module of Pyscrapper. Once the html markup is loaded from an URL, then this module comes into play.
+It parses the html content and form the final json object, as given in the configuration.
 """
 
 import signal
@@ -84,24 +85,25 @@ class RequestHandler:
 class PyScrapper:
     """
     Each block of given configuration is parsed by an object of PyScrapper class.
+
+
+    :type html: str
+    :param html: html field takes the html markup that needs to be scrapped
+
+    :type config: dict
+    :param config: This field takes the configuration, which tells the parser
+                    * which part of html need to be taken and parsed
+                    * how the parsed data has to be structured
+
     """
 
     __LIST_ITEM, __DATA = 'listItem', "data"
     __SELECTOR, __ATTR = "selector", "attr"
     __EQ, __FUNCTION = "eq", "function"
     CONST_KEYS = {__LIST_ITEM: True, __DATA: True, __SELECTOR: True,
-                  __ATTR: True, __EQ: True, __FUNCTION: True }
+                  __ATTR: True, __EQ: True, __FUNCTION: True}
 
     def __init__(self, html, config, is_list=False, name=''):
-        """
-        :type html: str
-        :param html: html field takes the html page that needs to be scrapped
-
-        :type config: dict
-        :param config: This field takes the configuration, which tells the parser
-                        * which part of html need to be taken and parsed
-                        * how the parsed data has to be structured
-        """
         self.is_list = is_list
         self.result = {}
         self.config = config
@@ -304,4 +306,5 @@ def scrape_content(url, config, to_string=False, raise_exception=True, window_si
 
 
 class PyScrapeException(Exception):
+    """A Custom exeption is raised, if any scrapping requirements are not satisfied."""
     pass

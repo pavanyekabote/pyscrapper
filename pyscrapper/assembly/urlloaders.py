@@ -1,7 +1,7 @@
 import abc
 from .observers import Observable, Observer
 from urllib3 import PoolManager
-import  queue
+import queue
 from concurrent.futures import ThreadPoolExecutor, Future, ProcessPoolExecutor
 from threading import Thread, RLock
 from pyscrapper.scrapper import PyScrapper
@@ -19,7 +19,8 @@ __all__ = ['UrlLoader', 'BrowserLessUrlLoader', 'PhantomUrlLoader']
 
 
 class UrlLoader(Observable, metaclass=abc.ABCMeta):
-    """An interface which provides methods to load an url and shutdown current urlloader"""
+    """* An interface which provides methods to load an url and shutdown current urlloader.\n
+    * Each UrlLoader is a sub class of :file:`Observable`, which lets the urlloader hold and notify the observers on url is loaded."""
     def __init__(self, pool, headers=None):
         super(UrlLoader, self).__init__()
         self._pool = pool
@@ -35,7 +36,8 @@ class UrlLoader(Observable, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def shutdown(self, wait=True):
-        """Shuts down the UrlLoader"""
+        """Shuts down the UrlLoader
+        :param wait=True: waits until existing queue of url's has been loaded"""
 
 
 class BrowserLessUrlLoader(UrlLoader):
@@ -46,7 +48,7 @@ class BrowserLessUrlLoader(UrlLoader):
 
     def __init__(self, pool=None, max_workers=None, headers=None, **kwargs):
         max_workers = max_workers or os.cpu_count() * 4
-        pool = ThreadPoolExecutor(max_workers= max_workers)
+        pool = ThreadPoolExecutor(max_workers=max_workers)
         super(BrowserLessUrlLoader, self).__init__(pool, headers=headers)
 
     def load_url(self, url, **kwargs):
@@ -66,7 +68,7 @@ class BrowserLessUrlLoader(UrlLoader):
                 self._load_url_success(url, f.result(), **kwargs)
 
         with self._pool_lock:
-            future = self._pool.submit(PoolManager().request,'GET', url, headers=self._headers)
+            future = self._pool.submit(PoolManager().request, 'GET', url, headers=self._headers)
             future.add_done_callback(callback)
 
     def _load_url_success(self, url, response, **kwargs):
@@ -109,17 +111,19 @@ class PhantomUrlLoader(UrlLoader):
 
     def load_url(self, url, **kwargs):
         """
-        url : URL to be loaded by the url loader.
-        pre_exec: This parameter takes a method/function as input and calls that method/function
-                passing the selenium web driver object into it. The method/function is called before given url is loaded into the driver
-        post_exec: This parameter takes a method/function as input and calls that method/function passing the selenium web driver
-                object into it. The method/function is called after given url is loaded into the driver
+        :param url: URL to be loaded by the url loader
+        :param pre_exec: This parameter takes a method/function as input and calls that method/function
+                passing the selenium web driver object into it. The method/function is called before given url is loaded by the driver
+        :param post_exec: This parameter takes a method/function as input and calls that method/function passing the selenium web driver
+                object into it. The method/function is called after given url is loaded by the driver
 
-        This feature allows developers to perform some extra operations on the web driver, by directly accessing the webdriver.
+        .. note:: These features pre_exec, post_exec allow developers to perform some extra operations on the web driver, by directly accessing the webdriver.\
+        This has been provided with an intuition that, some elements take long time to appear on the web browser. But, the web browser
+
         """
         with self._observers_lock:
             if len(self._observers) == 0:
-                warnings.formatwarning('',category=UserWarning, line=0, lineno=1, filename=None)
+                warnings.formatwarning('', category=UserWarning, line=0, lineno=1, filename=None)
                 warnings.warn('No Observer is added, make sure to add Observer before calling this method', UserWarning)
 
         def callback(f):

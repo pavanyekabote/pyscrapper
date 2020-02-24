@@ -2,14 +2,19 @@ import abc
 from threading import RLock
 
 __all__ = ['Observer', 'Observable', 'CallbackObserver']
+
+
 class Observer(abc.ABC):
     """An observer, which is observed and updated / notified on change"""
     @abc.abstractmethod
     def on_url_loaded(self, url, response, **kwargs):
-        """On url is loaded, or on url's http response is received"""
+        """This method is called when url's http response is received
+        
+        :param url: The url which is being loaded
+        :param response: The html response of the http request """
 
     def on_parse_completed(self, url, obj, **kwargs):
-        """On parsing of html, as per given configuration is completed"""
+        """This method is called when parsing of response html is completed, as per given configuration."""
 
 
 class Observable(abc.ABC):
@@ -31,6 +36,7 @@ class Observable(abc.ABC):
 
     def _create_lock(self):
         return RLock()
+
 
 class CallbackObserver(Observer):
     """ An observer which calls given list of callback methods,

@@ -5,7 +5,7 @@ from pyscrapper.scrapper import PyScrapper
 import uuid
 from threading import RLock
 
-__all__ = ['StandardScrapeManager']
+__all__ = ['StandardScrapeManager', 'BaseScrapeManager']
 
 
 class BaseScrapeManager(Observable, metaclass=abc.ABCMeta):
@@ -24,7 +24,11 @@ class BaseScrapeManager(Observable, metaclass=abc.ABCMeta):
         """This method intakes url, configuration.
         Returns an unique id, which refers to current scrape request.
         The response of current request is pushed, into the callback methods with
-        the unique id referring to the request made"""
+        the unique id referring to the request made
+
+        :returns:
+             An unique id, which is generated on scrape request is created.
+        """
 
     @abc.abstractmethod
     def shutdown(self):
@@ -32,8 +36,6 @@ class BaseScrapeManager(Observable, metaclass=abc.ABCMeta):
 
 
 class StandardScrapeManager(BaseScrapeManager, Observer):
-
-    __doc__ = super.__doc__
 
     def __init__(self, url_loader: UrlLoader):
         assert isinstance(url_loader, UrlLoader)
