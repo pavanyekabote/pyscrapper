@@ -48,7 +48,7 @@ def callback(url, data, **kwargs):
 #           in the web driver/ web browser
 #
 # post_exec : A callback function which accepts one parameter,
-#            which is the selenium webdriver. This gets called before the url is loaded
+#            which is the selenium webdriver. This gets called after the url is loaded
 #            in the web driver/ web browser
 #
 
