@@ -13,7 +13,7 @@ setup(
     description='A configurable web scrapping tool',
     packages=setuptools.find_packages(),
     python_requires='>=3',
-    install_requires=['selenium==3.141.0', 'bs4 ==0.0.1', 'urllib3==1.25.7'],
+    install_requires=['selenium==3.141.0', 'bs4 ==0.0.1', 'urllib3==1.25.8'],
     include_package_data=True
 )
 
